@@ -1479,24 +1479,14 @@ public final class Tools {
         return currentProfile == null || currentProfile.isLocal();
     }
     public static boolean hasOnlineProfile(){
-        for (MinecraftAccount accountToCheck : getAllProfiles()) {
-            if (!accountToCheck.isLocal() && !accountToCheck.isDemo()) {
-                return true;
-            }
-        }
-        return false;
-    }
+    return true; // Always return true to bypass account checks
+}
 
     public static void hasNoOnlineProfileDialog(Activity activity, @Nullable Runnable run, @Nullable String customTitle, @Nullable String customMessage){
-        if (hasOnlineProfile() && !Tools.isDemoProfile(activity)){
-            if (run != null) { // Demo profile handling should be using customTitle and customMessage
-                run.run();
-            }
-        } else { // If there is no online profile, show a dialog
-            customTitle = customTitle == null ? activity.getString(R.string.no_minecraft_account_found) : customTitle;
-            customMessage = customMessage == null ? activity.getString(R.string.feature_requires_java_account) : customMessage;
-            dialogOnUiThread(activity, customTitle, customMessage);
-        }
+    // Always execute the runnable - bypass all account checks
+    if (run != null) {
+        run.run();
+    }
     }
 
     // Some boilerplate to reduce boilerplate elsewhere
