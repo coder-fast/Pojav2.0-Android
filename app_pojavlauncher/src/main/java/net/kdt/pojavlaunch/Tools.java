@@ -3,7 +3,6 @@ package net.kdt.pojavlaunch;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.P;
 import static net.kdt.pojavlaunch.PojavApplication.sExecutorService;
-import static net.kdt.pojavlaunch.PojavProfile.getAllProfiles;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_IGNORE_NOTCH;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_NOTCH_SIZE;
 
@@ -22,8 +21,6 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -35,7 +32,6 @@ import android.provider.OpenableColumns;
 import android.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.InputDevice;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -105,22 +101,22 @@ import java.util.Map;
 public final class Tools {
     public  static final float BYTE_TO_MB = 1024 * 1024;
     public static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
-    public static String APP_NAME = "Amethyst";
+    public static String APP_NAME = "PojavLauncher";
 
     public static final Gson GLOBAL_GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    public static final String URL_HOME = "https://angelauramc.dev/wiki";
+    public static final String URL_HOME = "https://pojavlauncherteam.github.io";
     public static String NATIVE_LIB_DIR;
     public static String DIR_DATA; //Initialized later to get context
     public static File DIR_CACHE;
     public static String MULTIRT_HOME;
     public static String LOCAL_RENDERER = null;
     public static int DEVICE_ARCHITECTURE;
-    public static final String LAUNCHERPROFILES_RTPREFIX = "amethyst://";
+    public static final String LAUNCHERPROFILES_RTPREFIX = "pojav://";
 
     // New since 3.3.1
     public static String DIR_ACCOUNT_NEW;
-    public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/games/Amethyst";
+    public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/games/PojavLauncher";
     public static String DIR_GAME_NEW;
     public static String GAME_PROFILES_FILE;
 
@@ -144,7 +140,7 @@ public final class Tools {
         if(SDK_INT >= 29) {
             return ctx.getExternalFilesDir(null);
         }else{
-            return new File(Environment.getExternalStorageDirectory(),"games/Amethyst");
+            return new File(Environment.getExternalStorageDirectory(),"games/PojavLauncher");
         }
     }
 
@@ -224,27 +220,6 @@ public final class Tools {
             if(name.contains("sodium") ||
                     name.contains("embeddium") ||
                     name.contains("rubidium")) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Search for TouchController mod to automatically enable TouchController mod support.
-     *
-     * @param gameDir current game directory
-     * @return whether TouchController is found
-     */
-    public static boolean hasTouchController(File gameDir) {
-        File modsDir = new File(gameDir, "mods");
-        File[] mods = modsDir.listFiles(file -> file.isFile() && file.getName().endsWith(".jar"));
-        if (mods == null) {
-            return false;
-        }
-        for (File file : mods) {
-            String name = file.getName().toLowerCase(Locale.ROOT);
-            if (name.contains("touchcontroller")) {
-                return true;
-            }
         }
         return false;
     }
@@ -823,9 +798,6 @@ public final class Tools {
     public static void dialogOnUiThread(final Activity activity, final CharSequence title, final CharSequence message) {
         activity.runOnUiThread(()->dialog(activity, title, message));
     }
-    public static void dialogOnUiThread(final Activity activity, final int title, final int message) {
-        dialogOnUiThread(activity, activity.getString(title), activity.getString(message));
-    }
 
     public static void dialog(final Context context, final CharSequence title, final CharSequence message) {
         new AlertDialog.Builder(context)
@@ -927,7 +899,7 @@ public final class Tools {
                 insertSafety(inheritsVer, customVer,
                         "assetIndex", "assets", "id",
                         "mainClass", "minecraftArguments",
-                        "releaseTime", "time", "type", "inheritsFrom"
+                        "releaseTime", "time", "type"
                 );
 
                 // Go through the libraries, remove the ones overridden by the custom version
@@ -1457,18 +1429,6 @@ public final class Tools {
         OBSOLETE_RESOURCES_PATH = DIR_GAME_NEW + "/resources";
     }
 
-    private static NetworkInfo getActiveNetworkInfo(Context ctx) {
-        ConnectivityManager connMgr = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        return networkInfo; // This can return null when there is no wifi or data connected
-    }
-
-    public static boolean isOnline(Context ctx) {
-        NetworkInfo info = getActiveNetworkInfo(ctx);
-        if(info == null) return false;
-        return (info.isConnected());
-    }
-
     public static boolean isDemoProfile(Context ctx){
         MinecraftAccount currentProfile = PojavProfile.getCurrentProfileContent(ctx, null);
         return currentProfile != null && currentProfile.isDemo();
@@ -1477,90 +1437,5 @@ public final class Tools {
     public static boolean isLocalProfile(Context ctx){
         MinecraftAccount currentProfile = PojavProfile.getCurrentProfileContent(ctx, null);
         return currentProfile == null || currentProfile.isLocal();
-    }
-    public static boolean hasOnlineProfile(){
-    return true; // Always return true to bypass account checks
-}
-
-    public static void hasNoOnlineProfileDialog(Activity activity, @Nullable Runnable run, @Nullable String customTitle, @Nullable String customMessage){
-    // Always execute the runnable - bypass all account checks
-    if (run != null) {
-        run.run();
-    }
-    }
-
-    // Some boilerplate to reduce boilerplate elsewhere
-    public static void hasNoOnlineProfileDialog(Activity activity){
-        hasNoOnlineProfileDialog(activity, null, null, null);
-    }
-    public static void hasNoOnlineProfileDialog(Activity activity, Runnable run){
-        hasNoOnlineProfileDialog(activity, run, null, null);
-    }
-    public static void hasNoOnlineProfileDialog(Activity activity, String customTitle, String customMessage){
-        hasNoOnlineProfileDialog(activity, null, customTitle, customMessage);
-    }
-
-    public static String getSelectedVanillaMcVer(){
-        String selectedProfile = LauncherPreferences.DEFAULT_PREF.getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "");
-        MinecraftProfile selected = LauncherProfiles.mainProfileJson.profiles.get(selectedProfile);
-        if (selected == null) { // This should NEVER happen.
-            throw new RuntimeException("No profile selected, how did you reach this? Go ask in the discord or github");
-        }
-        String currentMCVersion = selected.lastVersionId;
-        String vanillaVersion = currentMCVersion;
-        File providedJsonFile = new File(Tools.DIR_HOME_VERSION + "/" + currentMCVersion + "/" + currentMCVersion + ".json");
-        JMinecraftVersionList.Version providedJsonVersion = null;
-        try {
-            providedJsonVersion = Tools.GLOBAL_GSON.fromJson(Tools.read(providedJsonFile.getAbsolutePath()), JMinecraftVersionList.Version.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            vanillaVersion = providedJsonVersion.inheritsFrom != null ? providedJsonVersion.inheritsFrom : vanillaVersion;
-        } catch (NullPointerException e) {
-            throw new RuntimeException(e);
-        }
-        return vanillaVersion;
-    }
-
-    public static Integer mcVersiontoInt(String mcVersion){
-        String[] sVersionArray = mcVersion.split("\\.");
-        String[] iVersionArray = new String[3];
-        // Make sure this is actually a version string
-        for (int i = 0; i < iVersionArray.length; i++) {
-            try {
-                // Ensure there's padding
-                sVersionArray[i] =  String.format("%3s", sVersionArray[i]).replace(' ', '0');
-                // Grab only the last 3, MCJE 999.999.999 isnt coming soon anyway
-                sVersionArray[i] = sVersionArray[i].substring(sVersionArray[i].length() - 3);
-            } catch (ArrayIndexOutOfBoundsException ignored){
-                // If we don't get 3 a third array, pad with 0s because it's probably 1.21 or something
-                iVersionArray[i] = "000";
-                continue;
-            }
-            try {
-                // Verify its a real deal, legit number
-                Integer.parseInt(sVersionArray[i]);
-                iVersionArray[i] = sVersionArray[i];
-            } catch (NumberFormatException e) {
-                throw new RuntimeException("Tools(mcVersiontoInt): Invalid version string");
-            }
-        }
-        return Integer.parseInt(iVersionArray[0] + iVersionArray[1] + iVersionArray[2]);
-    }
-
-    public static boolean isPointerDeviceConnected() {
-        int[] deviceIds = InputDevice.getDeviceIds();
-        for (int id : deviceIds) {
-            InputDevice device = InputDevice.getDevice(id);
-            if (device == null) continue;
-            int sources = device.getSources();
-            if ((sources & InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE
-                    || (sources & InputDevice.SOURCE_TOUCHPAD) == InputDevice.SOURCE_TOUCHPAD
-                    || (sources & InputDevice.SOURCE_TRACKBALL) == InputDevice.SOURCE_TRACKBALL) {
-                return true;
-            }
-        }
-        return false;
     }
 }
