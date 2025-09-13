@@ -83,11 +83,11 @@ public static final String MINECRAFT_RES = "https://resources.download.minecraft
 
 private static final String MAVEN_CENTRAL_REPO1 = "https://repo1.maven.org/maven2/";
 
-private AtomicReference<Exception> mDownloaderThreadException;
+private AtomicReference mDownloaderThreadException;
 
-private ArrayList<DownloaderTask> mScheduledDownloadTasks;
+private ArrayList mScheduledDownloadTasks;
 
-private ArrayList<File> mDeclaredNatives;
+private ArrayList mDeclaredNatives;
 
 private AtomicLong mProcessedFileCounter;
 
@@ -105,7 +105,7 @@ private File mTargetJarFile; // The destination client JAR to which the source w
 
 private boolean mUseFileCounter; // Whether a file counter or a size counter should be used for progress
 
-private static final ThreadLocal<byte[]> sThreadLocalDownloadBuffer = new ThreadLocal<>();
+private static final ThreadLocal sThreadLocalDownloadBuffer = new ThreadLocal&lt;&gt;();
 
 private boolean isLocalProfile = false;
 
@@ -131,13 +131,11 @@ public void start(@Nullable Activity activity, @Nullable JMinecraftVersionList.V
 
 @NonNull AsyncMinecraftDownloader.DoneListener listener) {
 
-if(activity != null){
+if(activity != null) {
 
 isLocalProfile = Tools.isLocalProfile(activity);
 
-// Force offline mode: disable online check
-
-isOnline = false; // Tools.isOnline(activity);
+isOnline = false; // Disable online check
 
 Tools.switchDemo(Tools.isDemoProfile(activity));
 
@@ -153,7 +151,7 @@ sExecutorService.execute(() -> {
 
 try {
 
-// Force offline mode by always passing true
+// Force offline mode to always true
 
 if(true /* offline mode forced for download */) {
 
@@ -163,37 +161,31 @@ String versionMessage = realVersion; // Use provided version unless we find its 
 
 try {
 
-// This reads the .json associated with the provided version. If it fails, we can assume it's not installed.
-
 File providedJsonFile = new File(Tools.DIR_HOME_VERSION + "/" + realVersion + "/" + realVersion + ".json");
 
 JMinecraftVersionList.Version providedJson = Tools.GLOBAL_GSON.fromJson(Tools.read(providedJsonFile.getAbsolutePath()), JMinecraftVersionList.Version.class);
-
-// This checks if running modded version that depends on other jars, so we use that for the error message.
 
 File vanillaJsonFile = new File(Tools.DIR_HOME_VERSION + "/" + providedJson.inheritsFrom + "/" + providedJson.inheritsFrom + ".json");
 
 versionMessage = providedJson.inheritsFrom != null ? providedJson.inheritsFrom : versionMessage;
 
-// Ensure they're both not some 0 byte corrupted json
+if(providedJsonFile.length() == 0 || (vanillaJsonFile.exists() && vanillaJsonFile.length() == 0)) {
 
-if (providedJsonFile.length() == 0 || (vanillaJsonFile.exists() && vanillaJsonFile.length() == 0)){
+throw new RuntimeException("Minecraft " + versionMessage + " is needed by " + realVersion);
 
-throw new RuntimeException("Minecraft "+versionMessage+ " is needed by " +realVersion);}
+}
 
 listener.onDownloadDone();
 
-} catch (Exception e) {
+} catch(Exception e) {
 
-String tryagain = "Please ensure you have an internet connection"; // Disabled Microsoft Account login check so changed message
+String tryagain = "Please ensure you have an internet connection";
 
-Tools.showErrorRemote(versionMessage + " is not currently installed. "+ tryagain, e);
+Tools.showErrorRemote(versionMessage + " is not currently installed. " + tryagain, e);
 
 }
 
 } else {
-
-// force downloadGame without online check
 
 try {
 
@@ -201,7 +193,7 @@ downloadGame(activity, version, realVersion);
 
 listener.onDownloadDone();
 
-} catch (Exception e) {
+} catch(Exception e) {
 
 listener.onDownloadFailed(e);
 
@@ -213,4 +205,6 @@ ProgressLayout.clearProgress(ProgressLayout.DOWNLOAD_MINECRAFT);
 
 });
 
-// Rest of the code remains unchanged
+}
+
+// The rest of the class remains unchanged
